@@ -77,7 +77,8 @@ explicit whitelist rather than guessing from fill rates:
 | `work_id` | `TextTable_H-ID` |
 | `work` | `TextTable_preferred_name` |
 | `language` | `TextTable_language_COLUMN` |
-| `date_start` / `date_end` / `date_mid` | `TextTable_date_of_creation_start` / `_end` / `_mid` |
+| `date_start` / `date_end` | `TextTable_date_of_creation_start` / `_end` (the midpoint is derived at load, not stored) |
+| `matiere_source` | provenance of `matiere`, recorded during resolution |
 | `matiere` | resolved in steps 2-3, corrected in step 9 |
 | `is_heldenepik` | `is_Heldenepik`, carried across in step 9 (German only) |
 
@@ -151,6 +152,21 @@ was already correct and is unaffected in kind, though its numbers will shift sli
 since `load_all` no longer re-derives `matiere` at all (previously harmless for German, but
 worth a fresh run to confirm).
 
+## Refreshing from Heurist
+
+`00-export.ipynb` reads the local cache (`lostma.db` + `jbcamps_gestes_schema/`) by default and
+does **not** re-download. Set `REFRESH_FROM_HEURIST = True` in the second cell to pull a fresh copy;
+if no cache is present the notebook downloads regardless, saying so first.
+
+Credentials are needed **only** when downloading. `login`/`password` reach `HeuristAPIConnection`
+through `sync()` alone — `witnesses()`, `parts()` and `stories()` query `lostma.db` directly — so
+on the default path the notebook constructs `LostmaDB("", "")` and never touches the credentials
+file. Re-running the carpentry therefore needs no secrets at all.
+
+Beware that a refresh can silently change matière assignments: that is how the Willehalm cycle
+lost `France` (see Fix 2). After any refresh, compare `matiere_source` and the matière
+distribution against the previous run before trusting downstream numbers.
+
 ## Credentials
 
 `00-export.ipynb` no longer hardcodes the Heurist login/password. It reads them from a
@@ -169,6 +185,7 @@ values before running `db.sync()`.
 | `language` | Heurist language code (`fro`, `frm`, `gmh`) |
 | `date_start`, `date_end`, `date_mid` | date of **composition**, parsed to numeric years |
 | `matiere` | final matière — algorithmic resolution with manual corrections folded in |
+| `matiere_source` | which stage decided it: `storyverse` (the *Matter of …* hierarchy), `local` (fallback to `Story_matter`), `override` (manual correction, step 9), or `none` (nothing resolved → `Unknown`) |
 | `is_heldenepik` *(German only)* | genre flag for Heldendichtung, independent of `matiere` |
 
 ### `{lang}_works_EdB.xlsx` — the correction sheet
