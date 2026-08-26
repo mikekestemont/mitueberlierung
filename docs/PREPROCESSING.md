@@ -106,7 +106,20 @@ Nothing is lost irrecoverably: the full Heurist tables stay in `lostma.db`, so w
   has no separate slot for "matière d'Angleterre", so these fall outside Britain/France/Rome
   rather than being folded into Britain). The full list of 26 works, before/after, is in
   the notebook output of step 9 and reproducible by re-running it.
-- **German** — an `is_Heldenepik` boolean flagging works belonging to the Dietrich/Nibelungen
+- **German** — an `override` column plus an `is_heldenepik` boolean. The overrides cover 7 works
+  the storyverse hierarchy cannot place: the Willehalm cycle (*Willehalm*, *Rennewart*, *Arabel*,
+  *Willehalm von Orlens*, the prose *Willehalm*, and Elisabeth von Nassau-Saarbrücken's *Sibille*)
+  → `France`, and *Alpharts Tod* → `Other`. These works have **no** storyverse-derived matière at
+  all (`matieres` is empty) and a `matter_local` of `Other`, so the automatic resolution puts them
+  in `Other`; as the German reflex of the Guillaume d'Orange cycle they belong to the matière de
+  France. They were previously recorded by overwriting `matiere` in place, which meant any
+  re-export silently reverted them — hence the explicit `override` column.
+
+  The durable fix is upstream: once the *Wilhelm*, *Arabel* and *Rennewart* storyverses are linked
+  to the Matter of France cycle in Heurist, these overrides can be dropped. A
+  `STORYVERSE_MATTER_OVERRIDES` entry would cover the five works that sit in those storyverses, but
+  not *Sibille*, which has no storyverse at all.
+- **German** — the `is_heldenepik` boolean flagging works belonging to the Dietrich/Nibelungen
   cycle, *Kudrun*, *Ortnit/Wolfdietrich*, etc. This is **not** a `matiere` override — it's an
   independent genre flag used later, in `01-networks.ipynb`, to test whether *Heldendichtung*
   is a cohesive sub-block of the German `Other` category. It was already wired correctly.
