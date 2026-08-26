@@ -118,6 +118,22 @@ Nothing is lost irrecoverably: the full Heurist tables stay in `lostma.db`, so w
   France. They were previously recorded by overwriting `matiere` in place, which meant any
   re-export silently reverted them — hence the explicit `override` column.
 
+  Seven French works that the database left `Unknown` — no storyverse and no local matière — were
+  also assigned by hand. Since the sheet carries no rationale column, the evidence is recorded here:
+
+  | work | assigned | basis |
+  |---|---|---|
+  | *Alexandre*, 1re/2e rédactions en prose | Rome | *Alexandre en Orient* sits in the `Alexandrian` storyverse and resolves to Rome |
+  | *Alexandre*, 3e rédaction en prose | Rome | as above |
+  | *Aventures des bruns* | Britain | part of the Guiron cycle; *Guiron le courtois*, its *Continuation* and *Suite Guiron* all resolve to Britain. Not to be confused with *Brun de la Montagne*, which the database places in France |
+  | *Le roman de Balain* | Britain | Post-Vulgate Arthurian; every Merlin/Grail work in the corpus resolves to Britain |
+  | *Girart de Roussillon*, abrégé | France | the full *Girart de Roussillon* has its own storyverse and resolves to France |
+  | *Athis et Prophilias* | Rome | judgement call — roman d'antiquité, no sibling work in the corpus |
+  | *Guillaume de Palerne* | Other | judgement call — outside Bodel's three, no sibling work in the corpus |
+
+  The first five rest on evidence internal to the database; the last two are classificatory
+  judgements and are the ones most worth a second opinion. All seven await review.
+
   The durable fix is upstream: once the *Wilhelm*, *Arabel* and *Rennewart* storyverses are linked
   to the Matter of France cycle in Heurist, these overrides can be dropped. A
   `STORYVERSE_MATTER_OVERRIDES` entry would cover the five works that sit in those storyverses, but
@@ -168,6 +184,11 @@ status to title case. The analysis notebook restores JSON dtypes and nothing els
 
 ## Refreshing from Heurist
 
+The download date is recorded in `data/heurist_sync.txt` and written by `db.sync()`; when the
+notebook uses the cache it prints that date instead. The current corpus was downloaded on
+**26 August 2026** (14:33 UTC) — that is the date to cite as the data snapshot.
+
+
 `00-export.ipynb` reads the local cache (`lostma.db` + `jbcamps_gestes_schema/`) by default and
 does **not** re-download. Set `REFRESH_FROM_HEURIST = True` in the second cell to pull a fresh copy;
 if no cache is present the notebook downloads regardless, saying so first.
@@ -210,6 +231,8 @@ values before running `db.sync()`.
 | `work` | title, so a reviewer can see what they are annotating |
 | `matiere_auto` | the matière as resolved automatically — what is being reviewed. Reference only; step 9 never reads it |
 | `override` *(French)* | corrected matière, filled in only where the automatic value is wrong |
+| `suggested` | a proposed matière for a work the database leaves `Unknown`. **Advisory only — never applied.** It becomes a correction when a reviewer copies it into `override`; step 9 reports how many are still pending |
+| `suggested_why` | the evidence for the suggestion, so a reviewer can judge it without re-deriving it |
 | `is_heldenepik` *(German)* | genre flag; carried across rather than overriding anything |
 
 ### `{lang}_linkage.json` — one row per witness (work ↔ manuscript)
