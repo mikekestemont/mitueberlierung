@@ -1,0 +1,13 @@
+git+https://github.com/LostMa-ERC/Heurist-analyser.git
+pandas
+numpy
+openpyxl
+networkx
+scikit-learn
+matplotlib
+scipy
+bambi
+arviz
+arviz-plots
+pymc
+pytensor

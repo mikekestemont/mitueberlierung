@@ -1,0 +1,20 @@
+,french,german
+Works (nodes),256.0,118.0
+Co-occurring works,200.0,79.0
+Manuscripts,911.0,449.0
+Multi-work manuscripts,281.0,105.0
+Witnesses,1616.0,607.0
+Edges,907.0,187.0
+Density,0.0278,0.0271
+Avg degree,7.09,3.17
+Avg edge weight,2.21,1.53
+Max edge weight,36.0,10.0
+Components,64.0,46.0
+Largest component,182.0,67.0
+Avg clustering,0.5006,0.2605
+Communities,72.0,52.0
+Mean works / manuscript,1.77,1.35
+Max works / manuscript,19.0,11.0
+Mean witnesses / work,5.38,5.06
+Median work date,1250.0,1265.0
+Median manuscript date,1350.0,1450.0

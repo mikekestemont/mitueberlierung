@@ -1,0 +1,12 @@
+# secrets
+credentials
+
+# large local cache of the raw Heurist tables — regenerate with db.sync()
+lostma.db
+
+# notebook/OS/python cruft
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
+.DS_Store
+validation.log
