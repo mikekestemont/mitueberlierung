@@ -1,0 +1,24 @@
+# Project-specific conda env for mitueberlierung.
+#
+# Create it:
+#   conda env create -f environment.yml
+#
+# Update it after a requirements.txt change:
+#   conda env update -f environment.yml --prune
+#
+# Everything beyond Python itself is installed via pip from requirements.txt,
+# on purpose: bambi/pymc/pytensor/arviz version-lock each other tightly, and
+# letting conda's own solver pick versions for that stack (mixing conda-forge
+# and pip resolution) is exactly the kind of dependency hell this is trying
+# to avoid. Conda here only provisions an isolated Python 3.12 interpreter
+# (matching the Python this project's notebooks were last run with); pip,
+# inside that env, installs the exact versions pinned and verified together
+# in requirements.txt.
+name: mitueberlierung
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+      - -r requirements.txt

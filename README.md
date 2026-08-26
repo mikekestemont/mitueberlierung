@@ -36,6 +36,41 @@ Full detail on every step, what each column means, and what changed in this clea
 
 ## Setup
 
+Create the project's conda environment (Python 3.12, matching what these notebooks
+were last run with; everything else installs via `requirements.txt`, pinned to a
+version combination that's verified to install and run together — see the comment
+at the top of that file for why bambi/pymc/pytensor/arviz are pinned exactly rather
+than left loose):
+
 ```
-pip install -r requirements.txt
+conda env create -f environment.yml
+conda activate mitueberlierung
 ```
+
+Changed `requirements.txt` later? Update the env in place instead of recreating it:
+
+```
+conda env update -f environment.yml --prune
+```
+
+### Using it in VS Code
+
+The env includes `ipykernel`, so once it's created VS Code should offer it directly:
+
+1. Open this folder in VS Code, open a notebook (`00-export.ipynb` or `01-networks.ipynb`).
+2. Click the kernel picker in the top right → **Select Another Kernel** → **Python
+   Environments** → `mitueberlierung`.
+3. For non-notebook Python files, `Cmd+Shift+P` → **Python: Select Interpreter** →
+   `mitueberlierung` does the same for the editor/terminal.
+
+If it doesn't show up in either picker (VS Code sometimes needs a nudge to notice a
+newly created conda env), run `Cmd+Shift+P` → **Python: Clear Workspace Interpreter
+Setting**, then reopen the notebook and try again — or register it as a Jupyter kernel
+explicitly, which always works:
+
+```
+conda activate mitueberlierung
+python -m ipykernel install --user --name mitueberlierung --display-name "Python (mitueberlierung)"
+```
+
+That adds "Python (mitueberlierung)" to the kernel dropdown directly.

@@ -1,13 +1,20 @@
+# Pinned to a version set verified to install and run together on Python 3.12
+# (bambi/pymc/pytensor/arviz have a history of breaking each other on loose
+# pins -- these exact versions were installed together in one clean
+# environment and smoke-tested: every import both notebooks use, an openpyxl
+# round-trip, and a real bambi/pymc NUTS fit all ran clean). See
+# environment.yml for the conda env that installs this file directly.
+pandas==3.0.5
+numpy==2.4.6
+openpyxl==3.1.5
+networkx==3.6.1
+scikit-learn==1.9.0
+matplotlib==3.11.1
+scipy==1.18.1
+bambi==0.20.0
+arviz==1.3.0
+arviz-plots==1.3.1
+pymc==6.3.1
+pytensor==3.3.0
+ipykernel==7.3.0
 git+https://github.com/LostMa-ERC/Heurist-analyser.git
-pandas
-numpy
-openpyxl
-networkx
-scikit-learn
-matplotlib
-scipy
-bambi
-arviz
-arviz-plots
-pymc
-pytensor
