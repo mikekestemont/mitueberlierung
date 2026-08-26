@@ -5628,6 +5628,20 @@
     "language":"gmh (Middle High German)"
   },
   {
+    "witness_id":59502,
+    "work_id":56270,
+    "work":"'Der Mantel'",
+    "manuscript_id":58329.0,
+    "shelfmark":"Cod. Ser. nova 2663",
+    "siglum":null,
+    "status":"complete",
+    "is_excerpt":"No",
+    "date_start":1504,
+    "date_end":1517,
+    "date_mid":1510,
+    "language":"gmh (Middle High German)"
+  },
+  {
     "witness_id":56990,
     "work_id":56151,
     "work":"Rudolf von Ems: 'Alexander'",
@@ -6969,34 +6983,6 @@
     "date_start":1476,
     "date_end":1500,
     "date_mid":1488,
-    "language":"gmh (Middle High German)"
-  },
-  {
-    "witness_id":59502,
-    "work_id":56270,
-    "work":"'Der Mantel'",
-    "manuscript_id":58329.0,
-    "shelfmark":"Cod. Ser. nova 2663",
-    "siglum":null,
-    "status":"complete",
-    "is_excerpt":"No",
-    "date_start":1504,
-    "date_end":1517,
-    "date_mid":1510,
-    "language":"gmh (Middle High German)"
-  },
-  {
-    "witness_id":57052,
-    "work_id":56155,
-    "work":"Rudolf von Ems: 'Der guote Gêrhart' (Prosaauflösung)",
-    "manuscript_id":58335.0,
-    "shelfmark":"Ernest. Gesamtarchiv, Reg. O, 157",
-    "siglum":null,
-    "status":"complete",
-    "is_excerpt":"No",
-    "date_start":1476,
-    "date_end":1525,
-    "date_mid":1500,
     "language":"gmh (Middle High German)"
   },
   {
@@ -16321,6 +16307,20 @@
     "date_start":1201,
     "date_end":1250,
     "date_mid":1226,
+    "language":"gmh (Middle High German)"
+  },
+  {
+    "witness_id":57052,
+    "work_id":56155,
+    "work":"Rudolf von Ems: 'Der guote Gêrhart' (Prosaauflösung)",
+    "manuscript_id":58335.0,
+    "shelfmark":"Ernest. Gesamtarchiv, Reg. O, 157",
+    "siglum":null,
+    "status":"complete",
+    "is_excerpt":"No",
+    "date_start":1476,
+    "date_end":1525,
+    "date_mid":1500,
     "language":"gmh (Middle High German)"
   },
   {

@@ -1,7 +1,7 @@
 # Preprocessing pipeline
 
 How the raw Heurist database becomes the three analysis-ready files per language
-(`{lang}_works_EdB.xlsx`, `{lang}_manuscripts.xlsx`, `{lang}_linkage.json`) that
+(`{lang}_works.xlsx`, `{lang}_linkage.json`) that
 `01-networks.ipynb` reads. `lang` is `french` or `german`.
 
 ## Pipeline overview
@@ -13,26 +13,26 @@ Heurist (LostMa DB)
 00-export.ipynb
        │  steps 1-7: pull witnesses/parts/stories, resolve matière
        │             algorithmically from the storyverse hierarchy
+       │  step 8:    split by language, rename to short snake_case,
+       │             keep only the columns actually consumed
        ▼
-{lang}_works.xlsx, {lang}_manuscripts.xlsx, {lang}_linkage.json   (step 8, pruned)
+{lang}_works.xlsx, {lang}_linkage.json
        │
        │  ── manual review, outside the notebook ──
-       │  a colleague opens {lang}_works.xlsx in Excel, adds an
-       │  annotation column, saves as {lang}_works_EdB.xlsx
+       │  a colleague reviews the works and records corrections in
+       │  {lang}_works_EdB.xlsx — a small hand-kept correction sheet
        ▼
-{lang}_works_EdB.xlsx  (hand-annotated copy)
+{lang}_works_EdB.xlsx   (work_id, work, matiere, override / is_heldenepik)
        │
-       │  00-export.ipynb, step 9: re-run the notebook (or just its
-       │  last cell) to fold the annotation into `matiere`
+       │  step 9: joined back onto {lang}_works.xlsx by work_id
        ▼
-{lang}_works_EdB.xlsx  (matière now final)
+{lang}_works.xlsx  (matière final, is_heldenepik carried across)
        ▼
-01-networks.ipynb  — reads matiere directly, no further correction logic
+01-networks.ipynb  — reads {lang}_works.xlsx + {lang}_linkage.json
 ```
 
-`{lang}_works_EdB.xlsx` is therefore the file `01-networks.ipynb` should always read for
-`works` — never the plain `{lang}_works.xlsx`, which only carries the algorithmic,
-pre-manual-review `matiere`.
+`{lang}_works.xlsx` is the single analysis-ready works file: step 9 folds the correction sheet
+into it, so `01-networks.ipynb` reads it directly and never opens `{lang}_works_EdB.xlsx`.
 
 ## Step-by-step
 
@@ -53,44 +53,50 @@ pre-manual-review `matiere`.
    lists works still `Unknown`.
 7. **Diagnose unresolved cases** (optional) — traces one work's path through the storyverse
    chain to find where resolution dead-ends.
-8. **Split by language group, prune, and write.** `works`/`manuscripts`/`linkage` are split
-   into `french` (Old + Middle French merged) and `german` (Middle High German), each split
-   is pruned of columns that don't survive it (see below), and the three files are written.
-9. **Fold in manual matière corrections.** If a hand-reviewed `{lang}_works_EdB.xlsx`
-   already exists, its annotation column is merged into `matiere` and the file is re-saved.
+8. **Split by language group, simplify, and write.** `works`/`linkage` are split into `french`
+   (Old + Middle French merged) and `german` (Middle High German), columns are renamed to short
+   snake_case and cut to the explicit whitelist (see below), and the two files are written.
+9. **Fold in the manual corrections.** If the hand-kept correction sheet
+   `{lang}_works_EdB.xlsx` exists, it is joined onto `{lang}_works.xlsx` by `work_id`:
+   `override` replaces `matiere` where filled, `is_heldenepik` is carried across.
 
-## Fix 1 — column pruning is now per language, not pooled
+## Fix 1 — a short, explicit output schema
 
-Step 1's 5%-fill threshold is computed once, across `fro` + `frm` + `gmh` pooled. A column
-that clears that pooled bar can still be completely empty once the data is split — French
-metadata was propping up columns that carry no German content, and vice versa. Before this
-cleanup, the exported `german_works_EdB.xlsx` shipped **16 entirely-empty columns**
-(`TextTable_length`, `verse_type`, `rhyme_type`, `stanza_type`, `is_written_by`,
-`is_adapted_by`, `author_freetext`, `regional_writing_style`, `scripta_freetext`,
-`date_of_creation_source`, `date_freetext`, `in_stemma`, `place_of_creation` — all 0.0%
-filled for German) plus several near-empty ones, out of 39 total.
+Heurist's own column names (`TextTable_H-ID`, `TextTable_date_of_creation_mid`, …) are long,
+inconsistent, and leak the source database's table layout into everything downstream. Worse, the
+5%-fill threshold in step 1 is computed across `fro` + `frm` + `gmh` *pooled*, so columns that are
+completely empty for one language still rode along into its export — `german_works.xlsx` shipped 16
+entirely-empty `TextTable_*` columns (verse/rhyme/stanza type, author and adaptor fields, regional
+writing style, …) out of 39.
 
-`prune_sparse_columns` (step 8, in `00-export.ipynb`) re-checks fill rate *within* each
-language's own split and drops anything under 5% that isn't one of the columns every
-downstream step depends on (identifiers, dates, language, form, and the three matière
-columns). Column counts before → after:
+Step 8 now renames to the short snake_case vocabulary the linkage file already used, and keeps an
+explicit whitelist rather than guessing from fill rates:
 
-| file | before | after | dropped |
-|---|---:|---:|---:|
-| `french_works.xlsx` / `french_works_EdB.xlsx` | 38 / 39 | 32 / 33 | 6 |
-| `german_works_EdB.xlsx` | 39 | 20 | 19 |
-| `french_manuscripts.xlsx` | 15 | 15 | 0 |
-| `german_manuscripts.xlsx` | 15 | 11 | 4 |
+| written column | from |
+|---|---|
+| `work_id` | `TextTable_H-ID` |
+| `work` | `TextTable_preferred_name` |
+| `language` | `TextTable_language_COLUMN` |
+| `date_start` / `date_end` / `date_mid` | `TextTable_date_of_creation_start` / `_end` / `_mid` |
+| `matiere` | resolved in steps 2-3, corrected in step 9 |
+| `is_heldenepik` | `is_Heldenepik`, carried across in step 9 (German only) |
 
-Nothing is lost silently: `prune_sparse_columns` prints exactly what it drops and why, and
-the raw Heurist tables (via `db.sync()` / `lostma.db`) always have the full column set if a
-dropped field turns out to matter later — re-run without the pruning step, or lower
-`MIN_FILL`, to get it back.
+That is exactly what `01-networks.ipynb` consumes, plus `work`/`language` so the table is readable
+by eye. Works files went from 38/39 columns to 7-8; the manuscripts export was dropped entirely
+(neither notebook read it, and shelfmarks reach the analysis through the linkage file).
+
+**Dates:** `date_start`/`date_end`/`date_mid` in the works file are the work's date of
+*composition*. The identically-named fields in the linkage file are the *manuscript copy's* date.
+Same names, different tables — never mixed.
+
+Nothing is lost irrecoverably: the full Heurist tables stay in `lostma.db`, so widening
+`WORK_COLUMNS_KEPT` and re-running step 8 brings any dropped field back.
 
 ## Fix 2 — manual matière corrections are now actually applied
 
-Two `_works_EdB.xlsx` files carry a hand-review pass by a colleague, on top of the
-algorithmic `matiere`:
+`{lang}_works_EdB.xlsx` is a small hand-kept **correction sheet** — `work_id`, `work`, the current
+`matiere`, and one annotation column — not a copy of the export. Step 9 joins it onto
+`{lang}_works.xlsx` by `work_id`:
 
 - **French** — an `override` column with a corrected `matiere` value for 26 works where
   the algorithmic resolution (storyverse hierarchy, or its `matter_local` fallback) was
@@ -136,44 +142,26 @@ values before running `db.sync()`.
 
 ## Final column reference
 
-### `{lang}_works_EdB.xlsx` — one row per text
+### `{lang}_works.xlsx` — one row per text (the analysis file)
 
 | column | meaning |
 |---|---|
-| `TextTable_H-ID` | Heurist work ID — the join key used everywhere downstream |
-| `TextTable_preferred_name` | work title |
-| `TextTable_language_COLUMN` | Heurist language code (`fro`, `frm`, `gmh`) |
-| `TextTable_literary_form` | verse / prose / mixed, etc. |
-| `TextTable_is_hypothetical` | flags reconstructed/hypothetical works |
-| `TextTable_is_derived_from H-ID` / `Name` | source work, if adapted/derived |
-| `TextTable_nature_of_derivations` | free text on how it derives from its source |
-| `TextTable_tradition_status` | manuscript-tradition status |
-| `TextTable_date_of_creation*` | free-text date plus parsed `_certainty`, `_source` (French only, ≥5% filled there), `_start`, `_end`, `_mid` numeric years |
-| `matieres` | raw storyverse-derived matière set (list), before aliasing/fallback |
-| `matter_local` | raw local `Story_matter` field, kept for comparison |
-| `matiere` | **final, analysis-ready matière** — algorithmic resolution with manual corrections folded in (see Fix 2) |
-| `storyverses`, `stories` | the storyverse(s)/stor(y/ies) a work belongs to |
-| `override` *(French only)* | the manual correction column a colleague filled in; preserved for provenance after being folded into `matiere` |
-| `is_Heldenepik` *(German only)* | manual genre flag, independent of `matiere` (see Fix 2) |
+| `work_id` | Heurist work ID — the join key used everywhere downstream |
+| `work` | work title |
+| `language` | Heurist language code (`fro`, `frm`, `gmh`) |
+| `date_start`, `date_end`, `date_mid` | date of **composition**, parsed to numeric years |
+| `matiere` | final matière — algorithmic resolution with manual corrections folded in |
+| `is_heldenepik` *(German only)* | genre flag for Heldendichtung, independent of `matiere` |
 
-French additionally keeps `TextTable_length`, `length_freetext`, `verse_type`,
-`rhyme_type`, `stanza_type`, `regional_writing_style H-ID`/`Name`, `scripta_freetext`,
-`date_of_creation_source`, `date_freetext`, `is_written_by H-ID`/`Name`,
-`author_freetext` — all above 5% fill for French but pruned for German, where they
-were empty.
-
-### `{lang}_manuscripts.xlsx` — one row per document
+### `{lang}_works_EdB.xlsx` — the correction sheet
 
 | column | meaning |
 |---|---|
-| `DocumentTable_H-ID` | Heurist manuscript ID — the join key |
-| `DocumentTable_current_shelfmark` | current shelfmark |
-| `DocumentTable_location_known` / `collection_of_fragments` | booleans |
-| `DocumentTable_old_shelfmark` | superseded shelfmark, where recorded |
-| `Repository_*` | holding repository: name, VIAF, city |
-
-French additionally keeps `DocumentTable_collection`, `digitization_freetext`,
-`Digitization_H-ID`, `Digitization_URI` (all 0% filled for German, pruned there).
+| `work_id` | join key back onto the works file |
+| `work` | title, so a reviewer can see what they are annotating |
+| `matiere` | the matière as resolved automatically — what is being reviewed |
+| `override` *(French)* | corrected matière, filled in only where the automatic value is wrong |
+| `is_heldenepik` *(German)* | genre flag; carried across rather than overriding anything |
 
 ### `{lang}_linkage.json` — one row per witness (work ↔ manuscript)
 
