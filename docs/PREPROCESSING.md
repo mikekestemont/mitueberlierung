@@ -22,7 +22,7 @@ Heurist (LostMa DB)
        │  a colleague reviews the works and records corrections in
        │  {lang}_works_EdB.xlsx — a small hand-kept correction sheet
        ▼
-{lang}_works_EdB.xlsx   (work_id, work, matiere, override / is_heldenepik)
+{lang}_works_EdB.xlsx   (work_id, work, matiere_auto, override / is_heldenepik)
        │
        │  step 9: joined back onto {lang}_works.xlsx by work_id
        ▼
@@ -121,6 +121,11 @@ now moot: step 9 in `00-export.ipynb` merges the correction directly into `matie
 data file itself, and `01-networks.ipynb`'s `load_all`/`assign_matiere` just reads that
 column — no alias or override logic left in the analysis notebook at all.
 
+Measured effect of the French overrides, running step 9 on the algorithmic export:
+`France 146→147, Britain 59→62, Rome 47→44, Other 42→53, Unknown 13→7`, and `England 6→0` —
+the England label disappears entirely, since Bodel's scheme has no such category and those
+works are reassigned to `Other` or `Britain`. All 26 annotated works change category.
+
 **This changes results that were already drafted.** All 26 corrected French works actually
 move category (none were no-ops), and several move across the Britain/France/Rome boundary
 used for the restricted network in Figures 2-3 and Tables 2-4 of the paper draft (e.g. five
@@ -159,7 +164,7 @@ values before running `db.sync()`.
 |---|---|
 | `work_id` | join key back onto the works file |
 | `work` | title, so a reviewer can see what they are annotating |
-| `matiere` | the matière as resolved automatically — what is being reviewed |
+| `matiere_auto` | the matière as resolved automatically — what is being reviewed. Reference only; step 9 never reads it |
 | `override` *(French)* | corrected matière, filled in only where the automatic value is wrong |
 | `is_heldenepik` *(German)* | genre flag; carried across rather than overriding anything |
 
