@@ -154,6 +154,18 @@ was already correct and is unaffected in kind, though its numbers will shift sli
 since `load_all` no longer re-derives `matiere` at all (previously harmless for German, but
 worth a fresh run to confirm).
 
+## Division of labour between the two notebooks
+
+`00-export.ipynb` owns every mapping, alias, correction and normalisation; `01-networks.ipynb`
+only reads. Nothing is remapped at analysis time — no alias tables, no fallbacks, no re-derivation
+of matière. This matters because the same logic living in both places is exactly how the original
+inconsistencies arose: the analysis notebook aliased `england` → `Britain` while the export left it
+as `England`, and the manual corrections were applied in neither.
+
+Concretely, the export is responsible for: resolving `matiere` and recording its `matiere_source`;
+applying the aliases and the manual overrides; unquoting work titles; and normalising witness
+status to title case. The analysis notebook restores JSON dtypes and nothing else.
+
 ## Refreshing from Heurist
 
 `00-export.ipynb` reads the local cache (`lostma.db` + `jbcamps_gestes_schema/`) by default and
@@ -204,9 +216,9 @@ values before running `db.sync()`.
 
 | field | meaning |
 |---|---|
-| `witness_id`, `work_id`, `work` | witness and work identifiers/title |
+| `witness_id`, `work_id`, `work` | witness and work identifiers/title. Titles are stripped of the single quotes Heurist wraps many German titles in, so they can be used directly as graph node labels |
 | `manuscript_id`, `shelfmark` | the manuscript it's copied in |
-| `siglum`, `status` | witness siglum and preservation status (e.g. `Fragmentary`) |
+| `siglum`, `status` | witness siglum and preservation status, normalised to title case (`Complete`, `Fragmentary`, `Defective`, `Citation`, `Lost`). Note this is a property of the *witness*, not of the manuscript: a composite codex can hold a complete copy of one text and a fragment of another |
 | `is_excerpt` | whether the witness is an excerpt |
 | `date_start`, `date_end`, `date_mid` | the *manuscript copy's* date, not the work's date of composition — the two are never mixed (see `01-networks.ipynb`, cell 1) |
 | `language` | Heurist language code |
