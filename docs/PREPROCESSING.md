@@ -40,9 +40,11 @@ into it, so `01-networks.ipynb` reads it directly and never opens `{lang}_works_
    the raw Heurist tables for `fro`, `frm`, `gmh` combined. `witnesses` is restricted to
    columns with ≥5% fill across all three languages *pooled*, plus a fixed allow-list of
    columns needed downstream regardless of fill rate.
-2. **Configure matière resolution.** `MATIERE_ALIASES` folds source labels onto the three
-   levels of interest (e.g. `antiquity` → `Rome`); `STORYVERSE_MATTER_OVERRIDES` bridges
-   storyverses not yet linked to a Matter in Heurist (e.g. the Carolingian cycle → France).
+2. **Configure matière resolution.** `MATIERE_ALIASES` folds the database's source labels onto
+   the analysis categories — `antiquity` → `Rome`, and `england` → `Other` (Bodel's scheme has no
+   *matière d'Angleterre*; these insular-hero romances are grouped with `Other` rather than folded
+   into `Britain`, which would misrepresent them as Arthurian). `STORYVERSE_MATTER_OVERRIDES`
+   bridges storyverses not yet linked to a Matter in Heurist (the Carolingian cycle → France).
 3. **Resolve matière from the storyverse network.** For each work, `matters_for` walks
    Story → Storyverse → cycle → … and collects every reachable *Matter of X* label.
 4. **Attach manuscripts and parse dates.** Each witness's parts are mapped to their parent
