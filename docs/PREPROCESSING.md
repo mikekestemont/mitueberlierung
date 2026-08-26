@@ -214,6 +214,11 @@ values before running `db.sync()`.
 
 ### `{lang}_linkage.json` — one row per witness (work ↔ manuscript)
 
+Reduced from 12 fields to 8. Dropped: `siglum` (unused; only 59%/33% filled), `is_excerpt`
+(unused, and `False` for every witness in both traditions — the field carries no information),
+`language` (constant within each file, which is already split by language), and `date_mid`
+(derived from the range at load, as in the works file).
+
 | field | meaning |
 |---|---|
 | `witness_id`, `work_id`, `work` | witness and work identifiers/title. Titles are stripped of the single quotes Heurist wraps many German titles in, so they can be used directly as graph node labels |
