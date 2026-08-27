@@ -27,8 +27,8 @@ login) are private to your machine and excluded from this repo — see below.
 
 The corpus is the LostMa snapshot of 26 August 2026 (`data/heurist_sync.txt`). Matière is
 resolved automatically where the database allows and corrected by hand where it does not:
-27 corrections in French, 6 in German, all listed in `docs/REVIEW.md`. Seven of the French
-ones are new and await review. No work is left `Unknown` in either tradition.
+28 corrections in French, 5 in German, all listed in `docs/REVIEW.md`, which was reviewed
+by EdB on 27 August 2026. No work is left `Unknown` in either tradition.
 
 ## Running the pipeline
 

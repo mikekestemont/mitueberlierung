@@ -101,13 +101,13 @@ Nothing is lost irrecoverably: the full Heurist tables stay in `lostma.db`, so w
 `matiere`, and one annotation column — not a copy of the export. Step 9 joins it onto
 `{lang}_works.xlsx` by `work_id`:
 
-- **French** — an `override` column with a corrected `matiere` value for 26 works where
+- **French** — an `override` column with a corrected `matiere` value for 28 works where
   the algorithmic resolution (storyverse hierarchy, or its `matter_local` fallback) was
   wrong or landed on `Unknown`/`Other`. Examples: *Cligès* (Rome → Britain, its Arthurian
   frame outweighing the classical source material), *Antioche* (Other → Rome), five
   *Bueve de Hanstonne* branches and *Gui de Warwick* (`England` → `Other` — Bodel's scheme
   has no separate slot for "matière d'Angleterre", so these fall outside Britain/France/Rome
-  rather than being folded into Britain). The full list of 26 works, before/after, is in
+  rather than being folded into Britain). The full list of 28 works, before/after, is in
   the notebook output of step 9 and reproducible by re-running it.
 - **German** — an `override` column plus an `is_heldenepik` boolean. The overrides cover 7 works
   the storyverse hierarchy cannot place: the Willehalm cycle (*Willehalm*, *Rennewart*, *Arabel*,
@@ -132,7 +132,8 @@ Nothing is lost irrecoverably: the full Heurist tables stay in `lostma.db`, so w
   | *Guillaume de Palerne* | Other | judgement call — outside Bodel's three, no sibling work in the corpus |
 
   The first five rest on evidence internal to the database; the last two are classificatory
-  judgements and are the ones most worth a second opinion. All seven await review.
+  judgements and are the ones most worth a second opinion. All seven were reviewed by EdB on
+  27 August 2026 and accepted, except *Ille et Galeron*, which she moved from Rome to Other.
 
   The durable fix is upstream: once the *Wilhelm*, *Arabel* and *Rennewart* storyverses are linked
   to the Matter of France cycle in Heurist, these overrides can be dropped. A
