@@ -8,26 +8,39 @@ same manuscripts? Research paper + the data pipeline and network analysis behind
 
 ```
 00-export.ipynb        pull from the LostMa Heurist database, resolve matière,
-                        write the three per-language data files (see docs/)
+                        write the two per-language data files (see docs/)
 01-networks.ipynb       co-appearance networks, matière homophily, Heldendichtung
-data/                   pipeline output — {lang}_works_EdB.xlsx, {lang}_manuscripts.xlsx,
-                        {lang}_linkage.json, network_comparison.csv
+data/                   {lang}_works.xlsx      one row per work, matière resolved
+                        {lang}_linkage.json    one row per witness, work ↔ manuscript
+                        {lang}_works_EdB.xlsx  hand-kept correction sheet (see docs/REVIEW.md)
+                        heurist_sync.txt       when the corpus was downloaded
 docs/PREPROCESSING.md   full documentation of the export/cleaning pipeline
+docs/REVIEW.md          the matière assignments that rest on human judgement,
+                        laid out for a reviewer
 paper/                  the paper draft (.docx)
 ```
 
 `lostma.db` (the local cache of the raw Heurist tables) and `credentials` (your Heurist
 login) are private to your machine and excluded from this repo — see below.
 
+## State of play
+
+The corpus is the LostMa snapshot of 26 August 2026 (`data/heurist_sync.txt`). Matière is
+resolved automatically where the database allows and corrected by hand where it does not:
+27 corrections in French, 6 in German, all listed in `docs/REVIEW.md`. Seven of the French
+ones are new and await review. No work is left `Unknown` in either tradition.
+
 ## Running the pipeline
 
-1. Copy `credentials.example` to `credentials` and fill in your own Heurist login.
-2. Run `00-export.ipynb` top to bottom. First run: `db.sync()` pulls from Heurist and
-   caches to `lostma.db`; later runs read the cache unless you ask it to refresh.
-3. If a colleague hand-reviews `data/{lang}_works.xlsx` in Excel and saves corrections
-   as `data/{lang}_works_EdB.xlsx`, re-run 00-export's last cell (or the whole notebook)
-   to fold those corrections into the final `matiere` column.
-4. Run `01-networks.ipynb` for the network analysis, figures, and statistical tests
+1. Run `00-export.ipynb` top to bottom. It reads the cached `lostma.db` by default and needs
+   no credentials. To pull a fresh copy from Heurist, copy `credentials.example` to
+   `credentials`, fill in your login, and set `REFRESH_FROM_HEURIST = True` in the second cell;
+   the download date is then recorded in `data/heurist_sync.txt`.
+2. To change a matière, edit `override` in `data/{lang}_works_EdB.xlsx` and re-run the
+   notebook's last cell. The correction sheet is hand-maintained and is the only copy of the
+   manual judgements, including the German `is_heldenepik` flag, which has no counterpart in
+   Heurist.
+3. Run `01-networks.ipynb` for the network analysis, figures, and statistical tests
    that feed the paper.
 
 Full detail on every step, what each column means, and what changed in this cleanup
