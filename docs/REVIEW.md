@@ -1,5 +1,11 @@
 # Matière assignments — for review
 
+> **Reviewed by EdB, 27 August 2026.** Two changes accepted and applied:
+> *Willehalm von Orlens* — the manual correction to France was withdrawn (it is not part of the
+> Willehalm–Arabel–Rennewart trilogy and does not appear in Bastert, *Helden als Heilige*); it now
+> keeps its automatic value, Other. *Ille et Galeron* — Rome → Other, following ARLIMA, which gives
+> it simply as a courtly romance; Rome is a setting in the text, not its matter.
+
 Corpus as downloaded from LostMa Heurist on **2026-08-26 14:33 UTC** (recorded in `data/heurist_sync.txt`).
 
 Everything below is a place where a human judgement overrides, or supplies, what the
