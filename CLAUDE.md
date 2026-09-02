@@ -32,9 +32,19 @@ interaction, plus the posterior figure) fits three NUTS models and is slow. When
 change does not touch it, execute only the cells above it and leave that section's
 cached outputs alone rather than re-running the whole notebook.
 
-`matiere_node_table` feeds those models via its `within` / `total` columns.
-**Those two columns' semantics must stay stable** (weighted ties to other
-Britain/France/Rome works only) — add new columns rather than redefining them.
+`matiere_node_table` feeds those models via its `within` / `total_full` columns:
+every manuscript neighbour counts as a trial, only a same-matière neighbour counts
+as a success. **`within`, `total` and `total_full` must keep their semantics** —
+`total` is weighted ties to other Britain/France/Rome works only, `total_full` is
+full weighted degree; add new columns rather than redefining any of them. `total`
+is still what Table 3's *within share* is built from; it is no longer what the
+models are fit on.
+
+The function's `keep` argument names the denominator a work must have data for to
+be included at all: `keep="total"` (Table 3) needs a B/F/R neighbour, while
+`keep="total_full"` (the models) needs any neighbour. The looser filter matters —
+it recovers 7 works whose co-transmission runs entirely to Heldendichtung or Other,
+all with `within = 0`, and excluding them biases the models upward.
 
 ## Methodological conventions settled so far
 
