@@ -52,6 +52,12 @@ all with `within = 0`, and excluding them biases the models upward.
   manuscripts a pair of works shares, and the argument turns on repeated
   co-transmission, not mere co-occurrence. The unweighted figures are kept
   alongside for reference.
+- **Communities use Newman projection weights, not the drawn edge weight.**
+  Each manuscript of \(n\) works contributes \(1/(n-1)\) to each pair (edge
+  attribute `newman`). Greedy modularity runs on that, so a large anthology is
+  not a clique of count-1 edges. The count `weight` is what the figures draw
+  (width and opacity) and what the homophily models use. Do not retune the
+  partition by dropping edges or forcing literary clusters.
 - **Newman assortativity comes from networkx**, not a hand-rolled formula.
   networkx has no `weight` parameter for categorical assortativity, so the
   weighting is expressed by replicating each edge into `weight` parallel edges on
