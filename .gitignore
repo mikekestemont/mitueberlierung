@@ -12,3 +12,6 @@ __pycache__/
 *.pyc
 .DS_Store
 validation.log
+
+# matplotlib font cache written by the notebooks
+.mplcache/
