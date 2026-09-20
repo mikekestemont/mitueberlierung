@@ -21,4 +21,4 @@ ipykernel==7.3.0
 # rich falls back to warnings.warn('install "ipywidgets" for Jupyter support')
 # on every sync in a notebook.
 ipywidgets==8.1.9
-git+https://github.com/LostMa-ERC/Heurist-analyser.git
+git+https://github.com/LostMa-ERC/Heurist-analyser.git@bcf9555d127af8d504cf16417fa8d81d3af6a30c

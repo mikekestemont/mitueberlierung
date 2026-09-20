@@ -69,11 +69,11 @@ These works resolve to nothing at all — no storyverse, no local matière.
 
 | work | database says | corrected to |
 |---|---|---|
-| Elisabeth von Nassau-Saarbrücken: 'Sibille | Other | **France** |
-| Ulrich von Türheim: 'Rennewart | Other | **France** |
-| Ulrich von dem Türlin: 'Arabel | Other | **France** |
-| Willehalm' (Prosaroman) | Other | **France** |
-| Wolfram von Eschenbach: 'Willehalm | Other | **France** |
+| Elisabeth von Nassau-Saarbrücken: Sibille | Other | **France** |
+| Ulrich von Türheim: Rennewart | Other | **France** |
+| Ulrich von dem Türlin: Arabel | Other | **France** |
+| Willehalm (Prosaroman) | Other | **France** |
+| Wolfram von Eschenbach: Willehalm | Other | **France** |
 
 
 ## Open points from the review
@@ -82,7 +82,7 @@ These works resolve to nothing at all — no storyverse, no local matière.
 *witness*, not of the work: a composite codex may carry one text complete and another only as a
 fragment. It lives in `{lang}_linkage.json` (`Complete`, `Defective`, `Fragmentary`, `Citation`,
 `Lost`), one value per witness, and every witness in both traditions carries one. Analyses can
-therefore be based on it — Fig. 1's status panel already is — just not from the works sheet.
+therefore be based on it — the manuscript-status chart in `01-networks.ipynb` already is — just not from the works sheet.
 
 **Works with no storyverse are where the assignments get fragile.** EdB noted that the original
 spreadsheet placed every Elisabeth von Nassau-Saarbrücken text in France except *Sibille*. That is
@@ -94,7 +94,6 @@ problem — see the note on *Wilhelm*, *Arabel* and *Rennewart* in `PREPROCESSIN
 
 ## If an assignment changes
 
-Edit `override`, re-run the export, and re-read the figures: changes to Britain/France/Rome move
-works in and out of the restricted networks (Figs 2–3) and shift the homophily numbers in §3. The
-two changes above moved German assortativity from .676 to .740, putting it above French (.712) and
-reversing the direction the draft currently reports.
+Edit `override`, re-run the export, and re-run `01-networks.ipynb`: a change into or out of
+Britain/France/Rome moves a work in or out of the restricted networks and shifts every homophily
+figure downstream.

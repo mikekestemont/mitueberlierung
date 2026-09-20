@@ -1,10 +1,8 @@
 # Preprocessing pipeline
 
-How the raw Heurist database becomes the three analysis-ready files per language
-(`{lang}_works.xlsx`, `{lang}_linkage.json`) that
-`01-networks.ipynb` reads. `lang` is `french` or `german`.
-
-## Pipeline overview
+How the raw Heurist database becomes the two analysis-ready files per language,
+`{lang}_works.xlsx` and `{lang}_linkage.json`, that `01-networks.ipynb` reads. `lang` is
+`french` or `german`.
 
 ```
 Heurist (LostMa DB)
@@ -12,256 +10,101 @@ Heurist (LostMa DB)
        ▼
 00-export.ipynb
        │  steps 1-7: pull witnesses/parts/stories, resolve matière
-       │             algorithmically from the storyverse hierarchy
+       │             from the storyverse hierarchy
        │  step 8:    split by language, rename to short snake_case,
        │             keep only the columns actually consumed
        ▼
 {lang}_works.xlsx, {lang}_linkage.json
        │
        │  ── manual review, outside the notebook ──
-       │  a colleague reviews the works and records corrections in
-       │  {lang}_works_EdB.xlsx — a small hand-kept correction sheet
+       │  corrections recorded in {lang}_works_EdB.xlsx
        ▼
-{lang}_works_EdB.xlsx   (work_id, work, matiere_auto, override / is_heldenepik)
-       │
        │  step 9: joined back onto {lang}_works.xlsx by work_id
        ▼
 {lang}_works.xlsx  (matière final, is_heldenepik carried across)
        ▼
-01-networks.ipynb  — reads {lang}_works.xlsx + {lang}_linkage.json
+01-networks.ipynb
 ```
 
-`{lang}_works.xlsx` is the single analysis-ready works file: step 9 folds the correction sheet
-into it, so `01-networks.ipynb` reads it directly and never opens `{lang}_works_EdB.xlsx`.
-
-## Step-by-step
-
-1. **Pull source tables.** `db.witnesses(...)`, `db.parts(...)`, `db.stories(...)` fetch
-   the raw Heurist tables for `fro`, `frm`, `gmh` combined. `witnesses` is restricted to
-   columns with ≥5% fill across all three languages *pooled*, plus a fixed allow-list of
-   columns needed downstream regardless of fill rate.
-2. **Configure matière resolution.** `MATIERE_ALIASES` folds the database's source labels onto
-   the analysis categories — `antiquity` → `Rome`, and `england` → `Other` (Bodel's scheme has no
-   *matière d'Angleterre*; these insular-hero romances are grouped with `Other` rather than folded
-   into `Britain`, which would misrepresent them as Arthurian). `STORYVERSE_MATTER_OVERRIDES`
-   bridges storyverses not yet linked to a Matter in Heurist (the Carolingian cycle → France).
-3. **Resolve matière from the storyverse network.** For each work, `matters_for` walks
-   Story → Storyverse → cycle → … and collects every reachable *Matter of X* label.
-4. **Attach manuscripts and parse dates.** Each witness's parts are mapped to their parent
-   document; free-text date fields are parsed into numeric `start`/`end`/`mid` years.
-5. **Build the three core tables** — `works`, `manuscripts`, `linkage` — deduplicated and
-   still spanning all three languages combined.
-6. **Verify matière coverage** — a sanity check, tallies the `matiere` distribution and
-   lists works still `Unknown`.
-7. **Diagnose unresolved cases** (optional) — traces one work's path through the storyverse
-   chain to find where resolution dead-ends.
-8. **Split by language group, simplify, and write.** `works`/`linkage` are split into `french`
-   (Old + Middle French merged) and `german` (Middle High German), columns are renamed to short
-   snake_case and cut to the explicit whitelist (see below), and the two files are written.
-9. **Fold in the manual corrections.** If the hand-kept correction sheet
-   `{lang}_works_EdB.xlsx` exists, it is joined onto `{lang}_works.xlsx` by `work_id`:
-   `override` replaces `matiere` where filled, `is_heldenepik` is carried across.
-
-## Fix 1 — a short, explicit output schema
-
-Heurist's own column names (`TextTable_H-ID`, `TextTable_date_of_creation_mid`, …) are long,
-inconsistent, and leak the source database's table layout into everything downstream. Worse, the
-5%-fill threshold in step 1 is computed across `fro` + `frm` + `gmh` *pooled*, so columns that are
-completely empty for one language still rode along into its export — `german_works.xlsx` shipped 16
-entirely-empty `TextTable_*` columns (verse/rhyme/stanza type, author and adaptor fields, regional
-writing style, …) out of 39.
-
-Step 8 now renames to the short snake_case vocabulary the linkage file already used, and keeps an
-explicit whitelist rather than guessing from fill rates:
-
-| written column | from |
-|---|---|
-| `work_id` | `TextTable_H-ID` |
-| `work` | `TextTable_preferred_name` |
-| `language` | `TextTable_language_COLUMN` |
-| `date_start` / `date_end` | `TextTable_date_of_creation_start` / `_end` (the midpoint is derived at load, not stored) |
-| `matiere_source` | provenance of `matiere`, recorded during resolution |
-| `matiere` | resolved in steps 2-3, corrected in step 9 |
-| `is_heldenepik` | `is_Heldenepik`, carried across in step 9 (German only) |
-
-That is exactly what `01-networks.ipynb` consumes, plus `work`/`language` so the table is readable
-by eye. Works files went from 38/39 columns to 7-8; the manuscripts export was dropped entirely
-(neither notebook read it, and shelfmarks reach the analysis through the linkage file).
-
-**Dates:** `date_start`/`date_end`/`date_mid` in the works file are the work's date of
-*composition*. The identically-named fields in the linkage file are the *manuscript copy's* date.
-Same names, different tables — never mixed.
-
-Nothing is lost irrecoverably: the full Heurist tables stay in `lostma.db`, so widening
-`WORK_COLUMNS_KEPT` and re-running step 8 brings any dropped field back.
-
-## Fix 2 — manual matière corrections are now actually applied
-
-`{lang}_works_EdB.xlsx` is a small hand-kept **correction sheet** — `work_id`, `work`, the current
-`matiere`, and one annotation column — not a copy of the export. Step 9 joins it onto
-`{lang}_works.xlsx` by `work_id`:
-
-- **French** — an `override` column with a corrected `matiere` value for 28 works where
-  the algorithmic resolution (storyverse hierarchy, or its `matter_local` fallback) was
-  wrong or landed on `Unknown`/`Other`. Examples: *Cligès* (Rome → Britain, its Arthurian
-  frame outweighing the classical source material), *Antioche* (Other → Rome), five
-  *Bueve de Hanstonne* branches and *Gui de Warwick* (`England` → `Other` — Bodel's scheme
-  has no separate slot for "matière d'Angleterre", so these fall outside Britain/France/Rome
-  rather than being folded into Britain). The full list of 28 works, before/after, is in
-  the notebook output of step 9 and reproducible by re-running it.
-- **German** — an `override` column plus an `is_heldenepik` boolean. The overrides cover 7 works
-  the storyverse hierarchy cannot place: the Willehalm cycle (*Willehalm*, *Rennewart*, *Arabel*,
-  *Willehalm von Orlens*, the prose *Willehalm*, and Elisabeth von Nassau-Saarbrücken's *Sibille*)
-  → `France`, and *Alpharts Tod* → `Other`. These works have **no** storyverse-derived matière at
-  all (`matieres` is empty) and a `matter_local` of `Other`, so the automatic resolution puts them
-  in `Other`; as the German reflex of the Guillaume d'Orange cycle they belong to the matière de
-  France. They were previously recorded by overwriting `matiere` in place, which meant any
-  re-export silently reverted them — hence the explicit `override` column.
-
-  Seven French works that the database left `Unknown` — no storyverse and no local matière — were
-  also assigned by hand. Since the sheet carries no rationale column, the evidence is recorded here:
-
-  | work | assigned | basis |
-  |---|---|---|
-  | *Alexandre*, 1re/2e rédactions en prose | Rome | *Alexandre en Orient* sits in the `Alexandrian` storyverse and resolves to Rome |
-  | *Alexandre*, 3e rédaction en prose | Rome | as above |
-  | *Aventures des bruns* | Britain | part of the Guiron cycle; *Guiron le courtois*, its *Continuation* and *Suite Guiron* all resolve to Britain. Not to be confused with *Brun de la Montagne*, which the database places in France |
-  | *Le roman de Balain* | Britain | Post-Vulgate Arthurian; every Merlin/Grail work in the corpus resolves to Britain |
-  | *Girart de Roussillon*, abrégé | France | the full *Girart de Roussillon* has its own storyverse and resolves to France |
-  | *Athis et Prophilias* | Rome | judgement call — roman d'antiquité, no sibling work in the corpus |
-  | *Guillaume de Palerne* | Other | judgement call — outside Bodel's three, no sibling work in the corpus |
-
-  The first five rest on evidence internal to the database; the last two are classificatory
-  judgements and are the ones most worth a second opinion. All seven were reviewed by EdB on
-  27 August 2026 and accepted, except *Ille et Galeron*, which she moved from Rome to Other.
-
-  The durable fix is upstream: once the *Wilhelm*, *Arabel* and *Rennewart* storyverses are linked
-  to the Matter of France cycle in Heurist, these overrides can be dropped. A
-  `STORYVERSE_MATTER_OVERRIDES` entry would cover the five works that sit in those storyverses, but
-  not *Sibille*, which has no storyverse at all.
-### Where `is_heldenepik` comes from
-
-**It is not in LostMa.** No Heurist field records Heldendichtung; the flag is a scholarly
-judgement that exists only in this project, hand-maintained in `data/german_works_EdB.xlsx`
-and carried onto `german_works.xlsx` by step 9 (`MANUAL_CARRY_COLUMNS`). The correction sheet
-is therefore the *only* copy — it is not regenerated by the export, and losing it would lose
-the annotation. It currently covers all 143 German works, 22 of them flagged.
-
-Because the sheet is keyed by `work_id`, a work added to the corpus by a later sync will have
-no row in it. Step 9 defaults such works to `False` and prints a warning naming how many were
-uncovered. This matters more than it looks: left as `NaN`, `bool(nan)` evaluates to `True` in
-Python, so an uncovered work would be silently flagged *as* Heldendichtung rather than silently
-left out. The analysis notebook guards the same way when it reads the flag.
-
-- **German** — the `is_heldenepik` boolean flagging works belonging to the Dietrich/Nibelungen
-  cycle, *Kudrun*, *Ortnit/Wolfdietrich*, etc. This is **not** a `matiere` override — it's an
-  independent genre flag used later, in `01-networks.ipynb`, to test whether *Heldendichtung*
-  is a cohesive sub-block of the German `Other` category. It was already wired correctly.
-
-**The French correction was never actually being applied.** `01-networks.ipynb`'s
-`apply_edb_override` looked for a column literally named `EdB`, which never existed (the
-real column is `override`) — so the function was a silent no-op. Even with the name fixed,
-it wrote into a column called `matieres` (plural, the raw storyverse-derived set), while the
-function that actually assigns matière to network nodes (`matiere_map`) reads `matiere`
-(singular) — so the correction would still never have reached the graphs. Both bugs are
-now moot: step 9 in `00-export.ipynb` merges the correction directly into `matiere` in the
-data file itself, and `01-networks.ipynb`'s `load_all`/`assign_matiere` just reads that
-column — no alias or override logic left in the analysis notebook at all.
-
-Measured effect of the French overrides, running step 9 on the algorithmic export:
-`France 146→147, Britain 59→62, Rome 47→44, Other 42→53, Unknown 13→7`, and `England 6→0` —
-the England label disappears entirely, since Bodel's scheme has no such category and those
-works are reassigned to `Other` or `Britain`. All 26 annotated works change category.
-
-**This changes results that were already drafted.** All 26 corrected French works actually
-move category (none were no-ops), and several move across the Britain/France/Rome boundary
-used for the restricted network in Figures 2-3 and Tables 2-4 of the paper draft (e.g. five
-works moving from `England`→`Britain`-via-old-alias to `Other`, i.e. now *excluded* from
-that restricted network; *Cligès*, *Floriant et Florete*, *Perceforest* moving into
-`Britain`; *Syracon*, *Tristan de Nanteuil* moving into `France`). **The French matière
-distribution, homophily percentages, and any figure/table derived from it should be
-recomputed and rechecked against the paper text before submission.** The German pipeline
-was already correct and is unaffected in kind, though its numbers will shift slightly too
-since `load_all` no longer re-derives `matiere` at all (previously harmless for German, but
-worth a fresh run to confirm).
-
-## Division of labour between the two notebooks
-
 `00-export.ipynb` owns every mapping, alias, correction and normalisation; `01-networks.ipynb`
-only reads. Nothing is remapped at analysis time — no alias tables, no fallbacks, no re-derivation
-of matière. This matters because the same logic living in both places is exactly how the original
-inconsistencies arose: the analysis notebook aliased `england` → `Britain` while the export left it
-as `England`, and the manual corrections were applied in neither.
+only reads. Nothing is remapped at analysis time.
 
-Concretely, the export is responsible for: resolving `matiere` and recording its `matiere_source`;
-applying the aliases and the manual overrides; unquoting work titles; and normalising witness
-status to title case. The analysis notebook restores JSON dtypes and nothing else.
+## Steps
+
+1. **Pull source tables.** `db.witnesses(...)`, `db.parts(...)`, `db.stories(...)` fetch the raw
+   Heurist tables for `fro`, `frm`, `gmh` combined. `witnesses` is restricted to columns with ≥5%
+   fill across the three languages pooled, plus a fixed allow-list needed downstream.
+2. **Configure matière resolution.** `MATIERE_ALIASES` folds the database's labels onto the
+   analysis categories: `antiquity` → `Rome`, `england` → `Other` (Bodel's scheme has no *matière
+   d'Angleterre*; folding these insular-hero romances into Britain would misrepresent them as
+   Arthurian). `STORYVERSE_MATTER_OVERRIDES` bridges storyverses not yet linked to a Matter in
+   Heurist (the Carolingian cycle → France).
+3. **Resolve matière from the storyverse network.** For each work, `matters_for` walks
+   Story → Storyverse → cycle → … and collects every reachable *Matter of X* label. Where the
+   hierarchy yields nothing, the story's own `Story_matter` field is used.
+4. **Attach manuscripts and parse dates.** Each witness's parts are mapped to their parent
+   document; free-text date fields are parsed into numeric `start`/`end` years.
+5. **Build the core tables** — `works`, `manuscripts`, `linkage` — deduplicated, all languages.
+6. **Verify matière coverage** — tally the distribution, list works still `Unknown`.
+7. **Diagnose unresolved cases** (optional) — trace one work's path through the storyverse chain.
+8. **Split by language, simplify, write.** `french` = Old + Middle French merged, `german` =
+   Middle High German. Columns are renamed to short snake_case and cut to the explicit whitelist
+   below. Titles are stripped of the quotes Heurist wraps many German titles in; witness status
+   is normalised to title case.
+9. **Fold in the manual corrections.** `{lang}_works_EdB.xlsx` is joined onto
+   `{lang}_works.xlsx` by `work_id`: `override` replaces `matiere` where filled (and sets
+   `matiere_source = override`), `is_heldenepik` is carried across. A work missing from the
+   sheet gets `is_heldenepik = False` with a warning — left as `NaN` it would read as `True`.
+
+## Where `is_heldenepik` comes from
+
+It is not in LostMa. No Heurist field records Heldendichtung; the flag is a scholarly judgement
+(Handschriftencensus "Helden- und Dietrichepik", Lienert 2015) that exists only in
+`data/german_works_EdB.xlsx` and is carried onto `german_works.xlsx` by step 9. The correction
+sheet is the only copy. It covers all 143 German works, 22 of them flagged.
 
 ## Refreshing from Heurist
 
-The download date is recorded in `data/heurist_sync.txt` and written by `db.sync()`; when the
-notebook uses the cache it prints that date instead. The current corpus was downloaded on
-**26 August 2026** (14:33 UTC) — that is the date to cite as the data snapshot.
-
-
 `00-export.ipynb` reads the local cache (`lostma.db` + `jbcamps_gestes_schema/`) by default and
-does **not** re-download. Set `REFRESH_FROM_HEURIST = True` in the second cell to pull a fresh copy;
-if no cache is present the notebook downloads regardless, saying so first.
+does not re-download. Set `REFRESH_FROM_HEURIST = True` in the second cell to pull a fresh copy;
+without a cache the notebook downloads regardless. Only a download needs the `credentials` file
+(`login = …` / `pwd = …`, excluded from git); the read path never touches it. The download date
+is written to `data/heurist_sync.txt` — the current snapshot is **26 August 2026, 14:33 UTC**.
 
-Credentials are needed **only** when downloading. `login`/`password` reach `HeuristAPIConnection`
-through `sync()` alone — `witnesses()`, `parts()` and `stories()` query `lostma.db` directly — so
-on the default path the notebook constructs `LostmaDB("", "")` and never touches the credentials
-file. Re-running the carpentry therefore needs no secrets at all.
+A refresh can silently change matière assignments (that is how the Willehalm cycle once lost
+`France`). After any refresh, compare `matiere_source` and the matière distribution against the
+previous run before trusting downstream numbers. The durable fix for the Willehalm cycle is
+upstream: once the *Wilhelm*, *Arabel* and *Rennewart* storyverses are linked to the Matter of
+France in Heurist, those overrides can be dropped.
 
-Beware that a refresh can silently change matière assignments: that is how the Willehalm cycle
-lost `France` (see Fix 2). After any refresh, compare `matiere_source` and the matière
-distribution against the previous run before trusting downstream numbers.
+## Column reference
 
-## Credentials
-
-`00-export.ipynb` no longer hardcodes the Heurist login/password. It reads them from a
-local `credentials` file (`login = ...` / `pwd = ...`, one per line) that is excluded from
-git via `.gitignore`. Copy `credentials.example` to `credentials` and fill in your own
-values before running `db.sync()`.
-
-## Final column reference
-
-### `{lang}_works.xlsx` — one row per text (the analysis file)
+### `{lang}_works.xlsx` — one row per work
 
 | column | meaning |
 |---|---|
 | `work_id` | Heurist work ID — the join key used everywhere downstream |
 | `work` | work title |
 | `language` | Heurist language code (`fro`, `frm`, `gmh`) |
-| `date_start`, `date_end`, `date_mid` | date of **composition**, parsed to numeric years |
-| `matiere` | final matière — algorithmic resolution with manual corrections folded in |
-| `matiere_source` | which stage decided it: `storyverse` (the *Matter of …* hierarchy), `local` (fallback to `Story_matter`), `override` (manual correction, step 9), or `none` (nothing resolved → `Unknown`) |
-| `is_heldenepik` *(German only)* | genre flag for Heldendichtung, independent of `matiere` |
+| `date_start`, `date_end` | date of **composition**; the midpoint is derived at load |
+| `matiere` | final matière — automatic resolution with manual corrections folded in |
+| `matiere_source` | which stage decided it: `storyverse` (the *Matter of …* hierarchy), `local` (fallback to `Story_matter`), `override` (manual correction) |
+| `is_heldenepik` *(German only)* | Heldendichtung flag, independent of `matiere` |
 
 ### `{lang}_works_EdB.xlsx` — the correction sheet
 
 | column | meaning |
 |---|---|
-| `work_id` | join key back onto the works file |
-| `work` | title, so a reviewer can see what they are annotating |
-| `matiere_auto` | the matière as resolved automatically — what is being reviewed. Reference only; step 9 never reads it |
-| `override` *(French)* | corrected matière, filled in only where the automatic value is wrong |
-| `suggested` | a proposed matière for a work the database leaves `Unknown`. **Advisory only — never applied.** It becomes a correction when a reviewer copies it into `override`; step 9 reports how many are still pending |
-| `suggested_why` | the evidence for the suggestion, so a reviewer can judge it without re-deriving it |
-| `is_heldenepik` *(German)* | genre flag; carried across rather than overriding anything |
+| `work_id`, `work` | join key and title |
+| `matiere_auto` | the matière as resolved automatically — reference only, never read by step 9 |
+| `override` | corrected matière, filled only where the automatic value is wrong |
+| `is_heldenepik` *(German)* | Heldendichtung flag; carried across, overrides nothing |
 
 ### `{lang}_linkage.json` — one row per witness (work ↔ manuscript)
 
-Reduced from 12 fields to 8. Dropped: `siglum` (unused; only 59%/33% filled), `is_excerpt`
-(unused, and `False` for every witness in both traditions — the field carries no information),
-`language` (constant within each file, which is already split by language), and `date_mid`
-(derived from the range at load, as in the works file).
-
 | field | meaning |
 |---|---|
-| `witness_id`, `work_id`, `work` | witness and work identifiers/title. Titles are stripped of the single quotes Heurist wraps many German titles in, so they can be used directly as graph node labels |
-| `manuscript_id`, `shelfmark` | the manuscript it's copied in |
-| `siglum`, `status` | witness siglum and preservation status, normalised to title case (`Complete`, `Fragmentary`, `Defective`, `Citation`, `Lost`). Note this is a property of the *witness*, not of the manuscript: a composite codex can hold a complete copy of one text and a fragment of another |
-| `is_excerpt` | whether the witness is an excerpt |
-| `date_start`, `date_end`, `date_mid` | the *manuscript copy's* date, not the work's date of composition — the two are never mixed (see `01-networks.ipynb`, cell 1) |
-| `language` | Heurist language code |
+| `witness_id`, `work_id`, `work` | witness and work identifiers/title |
+| `manuscript_id`, `shelfmark` | the manuscript it is copied in |
+| `status` | preservation status of the *witness* (`Complete`, `Defective`, `Fragmentary`, `Citation`, `Lost`), not of the manuscript: a codex can hold a complete copy of one text and a fragment of another |
+| `date_start`, `date_end` | the *manuscript copy's* date, not the work's composition — same names as in the works file, different tables, never mixed |
